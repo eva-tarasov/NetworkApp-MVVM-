@@ -9,4 +9,3 @@
 struct Hotels: Decodable {
     let id: Int?
 }
-

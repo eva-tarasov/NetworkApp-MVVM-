@@ -8,52 +8,29 @@
 
 import UIKit
 
-import UIKit
-
-func displayImages(hotel: Hotel, withImage stringUrlImage: String, for imageView: UIImageView ) {
-    
-    var stringUrlImage = stringUrlImage
-    
-    DispatchQueue.global().async {
-        
-        if let idImg = hotel.image  {
-            stringUrlImage += idImg
-            
-            guard let imageUrl = URL(string: stringUrlImage) else { return }
-            
-            if let imageData = try? Data(contentsOf: imageUrl) {
-                DispatchQueue.main.sync {
-                    imageView.image = UIImage(data: imageData)
-                }
-            } else {
-                DispatchQueue.main.sync {
-                    imageView.image = UIImage(named: "picture")
-                }
-            }
-            
-        } else {
-            DispatchQueue.main.sync {
-                imageView.image = UIImage(named: "picture")
-            }
-        }
-    }
+func getImageData(from urlOfImage: String?) -> Data? {
+    guard var stringUrl = urlOfImage else { return nil }
+    stringUrl = Links.share.imgHotelUrl + stringUrl
+    guard let imageUrl = URL(string: stringUrl) else { return nil }
+    guard let imageData = try? Data(contentsOf: imageUrl) else { return nil }
+    return imageData
 }
 
-func displayStars(stars: UILabel, countStars: Int) {
+func displayStars(countStars: Int) -> String {
     
     switch countStars {
     case 1:
-        stars.text = "★☆☆☆☆"
+        return "★☆☆☆☆"
     case 2:
-        stars.text = "★★☆☆☆"
+        return "★★☆☆☆"
     case 3:
-        stars.text = "★★★☆☆"
+        return "★★★☆☆"
     case 4:
-        stars.text = "★★★★☆"
+        return "★★★★☆"
     case 5:
-        stars.text = "★★★★★"
+        return "★★★★★"
     default:
-        stars.text = "hotel has't stars"
+        return "hotel has't stars"
     }
 }
 

@@ -16,7 +16,16 @@ class MainCollectionViewController: UICollectionViewController {
     
     // MARK: - Private Properties
     
-    private var allHotels: [Hotel] = []
+    private var viewModel: HotelListViewModelProtocol! {
+        didSet {
+            viewModel.fetchHotels{
+                DispatchQueue.main.sync {
+                    self.collectionView.reloadData()
+                    self.actvityIndicator.stopAnimating()
+                }
+            }
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,17 +33,9 @@ class MainCollectionViewController: UICollectionViewController {
         actvityIndicator.startAnimating()
         actvityIndicator.hidesWhenStopped = true
         
-        NetworkManager.shared.fetchDataHotels(url: Links.share.allHotelsUrl) { (hotels) in
-            self.allHotels = hotels
-            
-            DispatchQueue.main.async {
-                self.collectionView.reloadData()
-                self.actvityIndicator.stopAnimating()
-            }
-        }
+        viewModel = HotelListViewModel()
         
         setupNavigationBar()
-        
     }
     
     // MARK: Private Methods
@@ -55,15 +56,14 @@ class MainCollectionViewController: UICollectionViewController {
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of items
-        return allHotels.count
+        return viewModel.numberOfRows() ?? 0
     }
 
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CellHotel", for: indexPath) as! HotelPreviewCell
     
-        let hotel = allHotels[indexPath.row]
-        
-        cell.configure(with: hotel)
+        let cellViewModel = viewModel.cellViewModel(for: indexPath)
+        cell.viewModel = cellViewModel
     
         return cell
     }
@@ -71,7 +71,8 @@ class MainCollectionViewController: UICollectionViewController {
     // MARK: UICollectionViewDelegate
 
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let currentIdHotel = allHotels[indexPath.item]
+        viewModel.selectedRow(for: indexPath)
+        let currentIdHotel = viewModel.viewModelForSelectedRow()
         performSegue(withIdentifier: "showHotelInformation", sender: currentIdHotel)
     }
     
@@ -80,7 +81,7 @@ class MainCollectionViewController: UICollectionViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         guard segue.identifier == "showHotelInformation" else { return }
         let hotelInfoVC = segue.destination as! HotelInfoViewController
-        hotelInfoVC.hotel = sender as? Hotel
+        hotelInfoVC.viewModel = sender as? HotelInfoViewModelProtocol
     }
 
 }

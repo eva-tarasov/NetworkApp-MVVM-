@@ -20,43 +20,27 @@ class HotelInfoViewController: UIViewController {
     @IBOutlet var freeSuitesHotel: UILabel!
     @IBOutlet var favouriteButton: UIButton!
     
-    
-    var hotel: Hotel!
-    
     private var isFavorit = false
     
-    private var viewModel: HotelInfoViewModelProtocol! {
-        didSet {
-            titleHotel.text = viewModel.hotelName
-        }
-    }
+    var viewModel: HotelInfoViewModelProtocol!
     
     // MARK: Life cycle methods
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        viewModel = HotelInfoViewModel(hotel: hotel)
 
-        loadFavoriteStatus()
         configureHotelScreen()
     }
     
     @IBAction func toggleFavorite(_ sender: UIButton) {
-        isFavorit.toggle()
+        viewModel.changeFavouriteStatus()
         let image = setImageForFavoriteButton()
         sender.setImage(image, for: .normal)
-        DataManager.shared.saveFavouriteStatus(for: hotel.name ?? "", with: isFavorit)
     }
     
     private func setImageForFavoriteButton() -> UIImage {
         return isFavorit ? #imageLiteral(resourceName: "heartIcon") : #imageLiteral(resourceName: "unselectedHeart")
     }
-    
-    private func loadFavoriteStatus() {
-        isFavorit = DataManager.shared.loadFavouriteStatus(for: hotel.name ?? "")
-    }
-    
 }
 
 
@@ -65,22 +49,33 @@ extension HotelInfoViewController {
     // MARK: - Private Methods
     
     private func configureHotelScreen() {
-        
-//        titleHotel.text = hotel.name ?? ""
-        addressHotel.text = hotel.address ?? ""
-        distanceHotel.text = "Distance from center: \(hotel.distance ?? 0)"
-        
-        displayStars(stars: starsHotel, countStars: hotel.stars ?? 0)
-        
-        freeSuitesHotel.text = "Free suites: \(hotel.suitesAvailability ?? "0")"
-            
-        displayImages(hotel: hotel,
-                      withImage: Links.share.imgHotelUrl,
-                      for: imageHotel)
-        
-        
+
+        // работа через свойство viewModelDidChange плоха тем, что при смене одного свойства isFavorit мы отслеживаем изменения, и передаем в свойтсво viewModelDidChange всю модель целиком
+
+//        viewModel.viewModelDidChange = { [weak self] viewModel in
+//            guard let self = self else { return }
+//            self.isFavorit = viewModel.isFavorite
+//        }
+
+        viewModel.isFavorite.bind { [weak self] isFavourite in
+            guard let self = self else { return }
+            self.isFavorit = isFavourite
+        }
+
+        titleHotel.text = viewModel.hotelName
+        addressHotel.text = viewModel.address
+        distanceHotel.text = viewModel.distance
+        starsHotel.text = viewModel.stars
+        freeSuitesHotel.text = viewModel.suitesAvailability
+        if let imageData = viewModel.image {
+            imageHotel.image = UIImage(data: imageData)
+        } else {
+            imageHotel.image = UIImage(named: "picture")
+        }
+        viewModel.setFavouriteStatus()
+
+
         let image = setImageForFavoriteButton()
         favouriteButton.setImage(image, for: .normal)
-        
     }
 }
